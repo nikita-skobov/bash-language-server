@@ -76,6 +76,33 @@ describe('server', () => {
     })
   })
 
+  it('responds to onHover with function documentation extracted from comments', async () => {
+    const { connection, server } = await initializeServer()
+    server.register(connection)
+
+    const onHover = connection.onHover.mock.calls[0][0]
+
+    const result = await onHover(
+      {
+        textDocument: {
+          uri: FIXTURE_URI.COMMENT_DOC,
+        },
+        position: {
+          line: 17,
+          character: 0,
+        },
+      },
+      {} as any,
+      {} as any,
+    )
+
+    expect(result).toBeDefined()
+    expect(result).toEqual({
+      contents:
+        'Function defined on line 8\n\nthis is a comment\ndescribing the function\nhello_world\nthis function takes two arguments',
+    })
+  })
+
   it('responds to onDocumentHighlight', async () => {
     const { connection, server } = await initializeServer()
     server.register(connection)
@@ -225,7 +252,7 @@ describe('server', () => {
     )
 
     // Limited set (not using snapshot due to different executables on CI and locally)
-    expect(result && 'length' in result && result.length < 5).toBe(true)
+    expect(result && 'length' in result && result.length < 8).toBe(true)
     expect(result).toEqual(
       expect.arrayContaining([
         {
@@ -340,18 +367,20 @@ describe('server', () => {
     )
 
     expect(resultFunction).toMatchInlineSnapshot(`
-      Array [
-        Object {
-          "data": Object {
-            "name": "add_a_user",
-            "type": 3,
-          },
-          "documentation": "Function defined in ../issue101.sh",
-          "kind": 3,
-          "label": "add_a_user",
-        },
-      ]
-    `)
+Array [
+  Object {
+    "data": Object {
+      "name": "add_a_user",
+      "type": 3,
+    },
+    "documentation": "Function defined in ../issue101.sh
+
+Helper function to add a user",
+    "kind": 3,
+    "label": "add_a_user",
+  },
+]
+`)
   })
 
   it('responds to onCompletion with local symbol when word is found in multiple files', async () => {
